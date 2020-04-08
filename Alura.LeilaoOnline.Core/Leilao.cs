@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Alura.LeilaoOnline.Core
 {
@@ -14,17 +13,21 @@ namespace Alura.LeilaoOnline.Core
     {
         private IList<Lance> _lances;
         public IEnumerable<Lance> Lances => _lances;
+        private Interessado _ultimoCliente;
+        private IModalidadeAvaliacao _avaliador { get; }
+
+
         public string Peca { get; }
         public Lance Ganhador { get; private set; }
         public EstadoLeilao Estado { get; private set; }
-        private Interessado _ultimoCliente;
 
 
-        public Leilao(string peca)
+        public Leilao(string peca, IModalidadeAvaliacao avaliacao)
         {
             Peca = peca;
             _lances = new List<Lance>();
             Estado = EstadoLeilao.LeilaoAntesDoPregao;
+            _avaliador = avaliacao;
         }
 
         private bool AceitaLance(Interessado cliente, double valor)
@@ -34,7 +37,7 @@ namespace Alura.LeilaoOnline.Core
 
         public void RecebeLance(Interessado cliente, double valor)
         {
-            if (AceitaLance(cliente,valor))
+            if (AceitaLance(cliente, valor))
             {
                 _lances.Add(new Lance(cliente, valor));
                 _ultimoCliente = cliente;
@@ -50,13 +53,14 @@ namespace Alura.LeilaoOnline.Core
 
         public void TerminaPregao()
         {
-            if(Estado != EstadoLeilao.LeilaoEmAndamento)
+            if (Estado != EstadoLeilao.LeilaoEmAndamento)
             {
-                throw new InvalidOperationException("Não é possível terminar o pregão sem que ele tenha começado. Utilize o método IniciaPregao()"); 
+                throw new InvalidOperationException("Não é possível terminar o pregão sem que ele tenha começado. Utilize o método IniciaPregao()");
             }
-            Ganhador = Lances.
-                DefaultIfEmpty(new Lance(null, 0)).OrderBy(l => l.Valor).LastOrDefault();
+
+            Ganhador = _avaliador.Avalia(this);
             Estado = EstadoLeilao.LeilaoFinalizado;
+
 
         }
     }
